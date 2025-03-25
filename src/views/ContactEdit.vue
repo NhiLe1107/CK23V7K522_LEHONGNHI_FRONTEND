@@ -1,7 +1,8 @@
 <!-- <template>
     <div v-if="contact" class="page">
         <h4>Hiệu chỉnh Liên hệ</h4>
-        <ContactForm :contact="contact" @submit:contact="updateContact" @delete:contact="deleteContact" />
+        <ContactForm v-if="contact" :contact="contact" @submit:contact="updateContact"
+            @delete:contact="deleteContact" />
         <p>{{ message }}</p>
     </div>
 </template>
@@ -11,9 +12,7 @@ import ContactForm from "@/components/ContactForm.vue";
 import ContactService from "@/services/contact.service";
 
 export default {
-    components: {
-        ContactForm,
-    },
+    components: { ContactForm },
     props: {
         id: { type: String, required: true },
     },
@@ -24,47 +23,46 @@ export default {
         };
     },
     methods: {
-        async getContact(id) {
+        async getContact() {
+            if (!this.id) return;
             try {
-                this.contact = await ContactService.get(id);
+                const response = await ContactService.get(this.id);
+                this.contact = response || {}; // Đảm bảo luôn có dữ liệu
             } catch (error) {
-                console.log(error);
-                // Chuyển sang trang NotFound nếu không tìm thấy liên hệ
-                this.$router.push({
-                    name: "notfound",
-                    params: {
-                        pathMatch: this.$route.path.split("/").slice(1),
-                    },
-                    query: this.$route.query,
-                    hash: this.$route.hash,
-                });
+                console.error("Lỗi khi lấy dữ liệu:", error);
+                this.$router.push({ name: "notfound" });
             }
         },
         async updateContact(data) {
             try {
-                await ContactService.update(this.contact._id, data);
-                alert('Liên hệ được cập nhật thành công.');
+                await ContactService.update(this.id, data);
+                alert("Liên hệ được cập nhật thành công.");
                 this.$router.push({ name: "contactbook" });
             } catch (error) {
-                console.log(error);
+                console.error("Lỗi khi cập nhật:", error);
             }
         },
         async deleteContact() {
-            if (confirm("Bạn muốn xóa Liên hệ này?")) {
+            if (confirm("Bạn có chắc muốn xóa?")) {
                 try {
-                    await ContactService.delete(this.contact._id);
+                    await ContactService.delete(this.id);
                     this.$router.push({ name: "contactbook" });
                 } catch (error) {
-                    console.log(error);
+                    console.error("Lỗi khi xóa:", error);
                 }
             }
         },
     },
     created() {
-        this.getContact(this.id);
+        this.getContact();
+    },
+    watch: {
+        id: "getContact", // Theo dõi nếu ID thay đổi (nếu có điều hướng)
     },
 };
 </script> -->
+
+
 <template>
     <div v-if="contact" class="page">
         <h4>Hiệu chỉnh Liên hệ</h4>
@@ -94,7 +92,12 @@ export default {
             if (!this.id) return;
             try {
                 const response = await ContactService.get(this.id);
-                this.contact = response || {}; // Đảm bảo luôn có dữ liệu
+                console.log("Dữ liệu nhận được:", response);
+                if (response) {
+                    this.contact = { ...response }; // Sao chép để không làm thay đổi trực tiếp
+                } else {
+                    this.contact = null;
+                }
             } catch (error) {
                 console.error("Lỗi khi lấy dữ liệu:", error);
                 this.$router.push({ name: "notfound" });
